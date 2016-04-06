@@ -2,5 +2,34 @@
 title: Traffic Data Analysis
 output: html_document
 ---
+```{r include=FALSE}
+library(ggplot2)
+library(dplyr)
+library(knitr)
+```
+# Introduction
+Bey2ollak is an application for people to exchange info about traffic that uses crowd-sourcing, social interaction, localization to provide users with information about road statuses.
 
-this is where things start :)
+The data provided is crawled every 30 minutes from the web version of bey2ollak, which basically means every 30 minutes we have a screenshot of the whole data displayed to users.
+
+# Load data
+```{r cache = TRUE}
+data <- read.csv("traffic-data.csv")
+```
+# Data exploration
+first we are going to take an overview look at the data
+```{r}
+data %>% dim
+data %>% glimpse 
+data %>% head
+info<-data.frame(variable=names(data),nas=rapply(data,function(x)sum(is.na(x))),unique=rapply(data,function(x) length(unique(x))))
+info %>% filter() %>%kable
+```
+
+First there are columns that are used for storing ads which are not useful. Also It seems that we have rd.cl and rd.rp.type that are constant for all the rows which is not very useful for analysis purposes. so in order to limit or data to columns that are more significant those columns would be dropped.
+
+It's also clear that we have some variables with 2 unique values which maybe boolean values, also we have large values of nas which will be addressed later on.
+```{r}
+data <- data %>% select(-c(2:14),-rd.cl,-rd.rp.type)
+info <- info %>% filter(unique > 1)
+```

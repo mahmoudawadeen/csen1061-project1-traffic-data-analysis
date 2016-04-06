@@ -79,3 +79,38 @@ data %>% select(rd.rp.nm,rd.rp.fullnm) %>% filter(is.na(rd.rp.fullnm)) %>% uniqu
 ```
 
 upon some invastigation on bey2ollak fa3el kheir is a feature where users can report anonmously and bey2ollakgps is auto reporting of road status using gps. Also as seen some users don't have full names recorded on bey2ollak, from this info we can deduce that rd.rp.fullnm and rd.rp.nm are duplicated where rd.rp.nm doesn't contain any NAs so rd.rp.fullnm will be dropped.
+
+After taking a look for the web version frontend source code a js file was found with some insight on column symantics where rd.new , rd.strq, rd.cmrq where not used which concludes that these are just flags used for mobile applications. Which makes has no effect on the data. It also confirms some guesses made previously, so we wil update the column symantic table and also rename some columns.
+```javascript
+$(xml).find("rp").each(function () {
+
+        stid = $('stid', $(this)).text();
+        ustid = "";
+
+        if($('stid', $(this)).size() > 1) {
+
+            stid = $('stid', $(this)).eq(0).text();
+            ustid = $('stid', $(this)).eq(1).text();
+
+        }
+
+        comments.push({
+            userName: $('nm', $(this)).text(), 
+            comment: $('cm', $(this)).text(),
+            status: stid,
+            ustatus: ustid,
+            logo: $('img', $(this)).text(),
+            image: $('rpImg', $(this)).text(),
+            hour: $('hr', $(this)).text(),
+            min: $('mn', $(this)).text()
+        });    
+
+
+    });
+```
+
+```{r}
+data <- data %>% select(-rd.rp.fullnm,-rd.new,-rd.strq,-rd.cmrq)
+data <- data %>% rename(road_status = rd.stid,road_hours=rd.hr,road_minutes=rd.mn,reporter=rd.rp.nm,report_hours=rd.rp.hr,report_minutes=rd.rp.mn,report_status=rd.rp.stid,report_comment=rd.rp.cm,report_comment_id=rd.rp.cmid)
+info<-data.frame(variable=names(data),nas=rapply(data,function(x)sum(is.na(x))),unique=rapply(data,function(x) length(unique(x))))
+```

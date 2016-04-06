@@ -114,3 +114,58 @@ data <- data %>% select(-rd.rp.fullnm,-rd.new,-rd.strq,-rd.cmrq)
 data <- data %>% rename(road_status = rd.stid,road_hours=rd.hr,road_minutes=rd.mn,reporter=rd.rp.nm,report_hours=rd.rp.hr,report_minutes=rd.rp.mn,report_status=rd.rp.stid,report_comment=rd.rp.cm,report_comment_id=rd.rp.cmid)
 info<-data.frame(variable=names(data),nas=rapply(data,function(x)sum(is.na(x))),unique=rapply(data,function(x) length(unique(x))))
 ```
+
+Let's also change the crawl date to a more readable format.
+
+```{r}
+data$crawl_date <- as.POSIXct(strptime(data$crawl_date,  format="%a %b %d %H:%M:%S UTC %Y", tz="UTC"))
+typeof(data$crawl_date)
+```
+
+## Duplicate rows
+Taking into consideration the nature of how the data is crawled duplicate rows may occur since after half an hour from the last crawl the number of new reports on a road may not replace all the previously crawled reports.
+
+The number of duplicated comments id are:
+
+```{r}
+sum(duplicated(data$report_comment_id))
+```
+
+an example on duplicated ids :
+
+```{r}
+data %>% filter(report_comment_id==head(data$report_comment_id[duplicated(data$report_comment_id)],1)) %>% select(-road_hours,-road_minutes,-report_hours,-report_minutes,-rd.rp.rpImg,-rd.rp.img) %>% kable
+```
+
+So it seems that we have the same report duplicated three times one every half an hour, Which we can conclude that we can remove duplicates using comment id.
+
+The number of rows before removing duplicates:
+```{r}
+data %>% nrow
+```
+
+The number of duplicates now:
+```{r}
+data <- data %>% filter(!duplicated(data$report_comment_id))
+sum(duplicated(data$report_comment_id))
+```
+
+The number of rows after removing duplicates:
+```{r}
+data %>% nrow
+```
+
+## NAs investigation
+
+```{r}
+info<-data.frame(variable=names(data),nas=rapply(data,function(x)sum(is.na(x))),unique=rapply(data,function(x) length(unique(x))))
+info %>% filter %>% kable
+```
+
+The number of NAs in road_hours and road_minutes is equal which means that the timestamp of these roads wasn't available when the data was crawled and there's no method for retriving and also since they are only `r info %>%filter(variable=='road_hours')%>%select(unique)*100/nrow(data)`% of the data removing these rows won't make a significant change.
+
+```{r}
+data <- data %>% filter(!is.na(road_hours))
+info<-data.frame(variable=names(data),nas=rapply(data,function(x)sum(is.na(x))),unique=rapply(data,function(x) length(unique(x))))
+info %>% filter %>% kable
+```

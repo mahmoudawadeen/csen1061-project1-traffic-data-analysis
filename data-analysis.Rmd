@@ -33,3 +33,49 @@ It's also clear that we have some variables with 2 unique values which maybe boo
 data <- data %>% select(-c(2:14),-rd.cl,-rd.rp.type)
 info <- info %>% filter(unique > 1)
 ```
+
+# Column symantics
+
+Until now the our understanding of columns in the data is as follows which will be stored in a data frame to easily update it as we go:
+
+```{r}
+sym <- data.frame(Variables=names(data),
+                  Symantic= c(
+                    "The date the data was crawled on",
+                    "seems like road names but needs some organizing",
+                    "road ids",
+                    "unkown",
+                    "from the name we can guess this column relates to hours",
+                    "another guess relates to minutes",
+                    "unkown however it's known to hold a 2 unique values which is suspected to be a boolean",
+                    "obvioulsy this has something to do with",
+                    "same as rd.new",
+                    "same as rd.new",
+                    "seems like human names",
+                    "also seems like human names",
+                    "same as rd.hr",
+                    "same as rd.mn",
+                    "unkown",
+                    "user comments",
+                    "comment ids",
+                    "same as rd.rpImg",
+                    "same as rd.rpImg"))
+sym %>% kable
+```
+
+From taking a look at the bey2ollak web version, Each road is consisted of sub roads which have statuses, timestamp, some reports posted on it and each report has a status, comment, timestamp and optional image attached. Users who report have profile images, usernames and full names. A road status is determined by the reports posted on it, so for the road timestamp it will be equal to the latest report timestamp. As for the data crawled, we can say that rd is a road and rp is a report.
+
+# Cleaning data
+## Duplicate and mobile application columns
+We are going to start with duplicate columns suspects rd.rp.nm and rd.rp.fullnm. Let's take a look on some examples from this two columns
+```{r}
+data %>% select(rd.rp.nm,rd.rp.fullnm) %>% unique %>% head(10) %>% kable
+```
+
+we can notice that the are two unique names fa3el kheir and bey2ollakgps and there are alos NAs in fullnm while 0 NAs in nm.
+
+```{r}
+data %>% select(rd.rp.nm,rd.rp.fullnm) %>% filter(is.na(rd.rp.fullnm)) %>% unique %>% head(10) %>% kable
+```
+
+upon some invastigation on bey2ollak fa3el kheir is a feature where users can report anonmously and bey2ollakgps is auto reporting of road status using gps. Also as seen some users don't have full names recorded on bey2ollak, from this info we can deduce that rd.rp.fullnm and rd.rp.nm are duplicated where rd.rp.nm doesn't contain any NAs so rd.rp.fullnm will be dropped.

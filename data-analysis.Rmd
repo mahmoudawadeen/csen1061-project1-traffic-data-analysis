@@ -234,3 +234,23 @@ info %>% filter %>% kable
 ```
 
 After this step all the NAs from the data were removed and we are ready to continue analysis.
+
+# Visualization
+Since the data was crawled from a different timezone we need to convert the timezone of all the dates to be consistent with Cairo timings.
+```{r}
+data<- data%>% mutate(crawl_date=crawl_date+2*60*60,report_date=report_date+2*60*60,road_date=road_date+2*60*60)
+```
+And then we will divide the report times we have into 30 minutes time intervals and plot them aganist the number of the reports in an interval.
+```{r cache=TRUE}
+data <-data %>% mutate(interval = strftime(cut(data$report_date,breaks="30 min"),format="%H:%M"))
+data %>% group_by(interval) %>% summarize(reports=length(report_comment_id))%>%head %>% kable
+data %>% group_by(interval) %>% summarize(reports=length(report_comment_id))%>%ggplot(aes(x=interval, y=reports)) + geom_bar(stat='identity')+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+Another
+
+```{r}
+data %>% filter(road_status<6) %>% group_by(rd.nm) %>% summarize(stat=mean(road_status),reports=length(report_comment_id)) %>%arrange(desc(reports))%>% head(10) %>% kable()
+data %>% filter(road_status<6) %>% group_by(rd.nm) %>% summarize(stat=mean(road_status),reports=length(report_comment_id)) %>%arrange(desc(reports))%>% head(10) %>% ggplot(aes(x=rd.nm, y=stat)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjust = 1),text=element_text(size=10))
+```
+

@@ -335,33 +335,33 @@ We can see that we have a lot of outliers due to user inactivity.
 # Inferential data analysis
 We will test various confedince intervals on serveral metrcies and we will refer to the lower and upper bounds to determine the infered result.
 ```{r cache = TRUE}
-sample_means <- lapply(1:1000, function(rep) {data %>%filter(road_status<6) %>% sample_n(1000,replace=FALSE) %>% summarize(m=mean(road_status))})%>%unlist()
+sample_means <- lapply(1:1000, function(rep) {data %>%filter(road_status<6) %>% sample_n(50,replace=FALSE) %>% summarize(m=mean(road_status))})%>%unlist()
 hist(sample_means)
 z.test(sample_means, sigma.x = sd(sample_means), conf.level = 0.95)
 ```
 
 ```{r cache = TRUE}
-sample_means <- lapply(1:1000, function(rep) {data %>%filter(road_status<6) %>% sample_n(1000,replace=TRUE) %>% summarize(m=mean(road_hours+road_minutes/60))})%>%unlist()
+sample_means <- lapply(1:1000, function(rep) {data %>%filter(road_status<6) %>% sample_n(50,replace=TRUE) %>% summarize(m=mean(road_hours+road_minutes/60))})%>%unlist()
 hist(sample_means)
 z.test(sample_means, sigma.x = sd(sample_means), conf.level = 0.95)
 ```
 ```{r cache = TRUE}
-sample_means <- lapply(1:1000, function(rep) {data %>%filter(road_status<6) %>% sample_n(1000,replace=FALSE) %>% summarize(m=mean(road_status))})%>%unlist()
+sample_means <- lapply(1:1000, function(rep) {data %>%filter(road_status<6) %>% sample_n(50,replace=FALSE) %>% summarize(m=mean(road_status))})%>%unlist()
 hist(sample_means)
 z.test(sample_means, sigma.x = sd(sample_means), conf.level = 0.90)
 ```
 ```{r cache = TRUE}
-sample_means <- lapply(1:1000, function(rep) {data %>%filter(road_status<6) %>% sample_n(1000,replace=TRUE) %>% summarize(m=mean(road_hours+road_minutes/60))})%>%unlist()
+sample_means <- lapply(1:1000, function(rep) {data %>%filter(road_status<6) %>% sample_n(50,replace=TRUE) %>% summarize(m=mean(road_hours+road_minutes/60))})%>%unlist()
 hist(sample_means)
 z.test(sample_means, sigma.x = sd(sample_means), conf.level = 0.90)
 ```
 ```{r cache = TRUE}
-sample_means <- lapply(1:1000, function(rep) {data %>%filter(report_status<6) %>% sample_n(1000,replace=FALSE) %>% summarize(m=mean(report_status))})%>%unlist()
+sample_means <- lapply(1:1000, function(rep) {data %>%filter(report_status<6) %>% sample_n(50,replace=FALSE) %>% summarize(m=mean(report_status))})%>%unlist()
 hist(sample_means)
 z.test(sample_means, sigma.x = sd(sample_means), conf.level = 0.95)
 ```
 ```{r cache = TRUE}
-sample_means <- lapply(1:1000, function(rep) {data %>%filter(report_status<6) %>% sample_n(1000,replace=FALSE) %>% summarize(m=mean(report_status))})%>%unlist()
+sample_means <- lapply(1:1000, function(rep) {data %>%filter(report_status<6) %>% sample_n(50,replace=FALSE) %>% summarize(m=mean(report_status))})%>%unlist()
 hist(sample_means)
 z.test(sample_means, sigma.x = sd(sample_means), conf.level = 0.90)
 ```

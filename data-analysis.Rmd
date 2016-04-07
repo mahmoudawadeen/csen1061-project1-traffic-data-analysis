@@ -257,7 +257,7 @@ Now let's take a look on the 30 most reported roads taking into consideration th
 
 
 ```{r cache = TRUE}
-data %>% filter(road_status<6) %>% group_by(rd.nm) %>% summarize(stat=mean(road_status),reports=length(report_comment_id)) %>%arrange(desc(reports))%>% head(30) %>% kable()
+data %>% filter(road_status<6) %>% group_by(rd.nm) %>% summarize(mean=mean(road_status),variance = var(road_status),sd=sd(road_status),reports=length(report_comment_id)) %>%arrange(desc(reports))%>% head(30) %>% kable()
 ```
 
 ```{r cache = TRUE}
@@ -278,9 +278,9 @@ data %>% filter(road_status<6) %>% group_by(day_time) %>% summarize(reports=leng
 it's seems people are more active at day time which is consistent with the peaks we found. What about the average road status.
 
 ```{r cache = TRUE}
-data %>% filter(road_status<6 &day_time=="Day") %>% group_by(rd.nm) %>% summarize(reports_day=length(report_comment_id),stat_day=mean(road_status)) %>% arrange(desc(reports_day)) %>% head(10) %>% kable
+data %>% filter(road_status<6 &day_time=="Day") %>% group_by(rd.nm) %>% summarize(variance_day = var(road_status),sd_day=sd(road_status),reports_day=length(report_comment_id),stat_day=mean(road_status)) %>% arrange(desc(reports_day)) %>% head(10) %>% kable
 
-data %>% filter(road_status<6 &day_time=="Night") %>% group_by(rd.nm) %>% summarize(reports_night=length(report_comment_id),stat_night=mean(road_status)) %>% arrange(desc(reports_night)) %>% head(10) %>% kable()
+data %>% filter(road_status<6 &day_time=="Night") %>% group_by(rd.nm) %>% summarize(variance_night = var(road_status),sd_night=sd(road_status),reports_night=length(report_comment_id),stat_night=mean(road_status)) %>% arrange(desc(reports_night)) %>% head(10) %>% kable()
 ```
 
 Now let's plot at day
@@ -302,7 +302,7 @@ data <- data %>% mutate(weekday=weekdays(report_date))
 data %>% group_by(weekday) %>% summarize(reports = length(report_comment_id))%>%mutate(percentage = reports*100/sum(reports)) %>% ggplot(aes(x = "",y=percentage, fill = factor(weekday))) + geom_bar(width = 1,stat="identity") +geom_text(aes(y=cumsum(percentage)-percentage/2,label=round(percentage,3)))+ coord_polar(theta = "y")
 ```
 
-The is no signficant difference in the number of reports between the day, however, it's clear the thursday is the most while friday is the least reported day.
+The is no significant difference in the number of reports between the day, however, it's clear the Thursday is the most while Friday is the least reported day.
 
 Until now we didn't talk about who reports so let's add two more features anonymous and gps.
 ```{r cache = TRUE}
@@ -321,7 +321,7 @@ data %>% group_by(report_status) %>% summarize(reports = length(report_comment_i
 data %>% group_by(road_status) %>% summarize(reports = length(road_status)) %>% ggplot(aes(x=road_status, y=reports)) + geom_bar(stat='identity')+theme(axis.text.x = element_text(angle = 90, hjust = 1))+scale_x_discrete(breaks=seq(1,11,1))
 ```
 
-The graph of the number of reports per road status is experincing the same behavior as the number of reports per report status which says that the road status is dependent on the report status.
+The graph of the number of reports per road status is experiencing the same behavior as the number of reports per report status which says that the road status is dependent on the report status.
 
 Now let's look on frequency of reporting and how much a road is update
 
@@ -331,6 +331,7 @@ data %>% ggplot(aes(x=day_time, y=report_hours+report_minutes/60)) + geom_boxplo
 ```
 
 We can see that we have a lot of outliers due to user inactivity.
+
 # Inferential data analysis
 ```{r cache = TRUE}
 sample_means <- lapply(1:1000, function(rep) {data %>%filter(road_status<6) %>% sample_n(1000,replace=FALSE) %>% summarize(m=mean(road_status))})%>%unlist()
@@ -343,3 +344,4 @@ sample_means <- lapply(1:1000, function(rep) {data %>%filter(road_status<6) %>% 
 hist(sample_means)
 z.test(sample_means, sigma.x = sd(sample_means), conf.level = 0.95)
 ```
+

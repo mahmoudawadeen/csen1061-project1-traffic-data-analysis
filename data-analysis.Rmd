@@ -80,7 +80,7 @@ data %>% select(rd.rp.nm,rd.rp.fullnm) %>% filter(is.na(rd.rp.fullnm)) %>% uniqu
 
 upon some investigation on bey2ollak fa3el kheir is a feature where users can report anonymously and bey2ollakgps is auto reporting of road status using gps. Also as seen some users don't have full names recorded on bey2ollak, from this info we can deduce that rd.rp.fullnm and rd.rp.nm are duplicated where rd.rp.nm doesn't contain any NAs so rd.rp.fullnm will be dropped.
 
-After taking a look for the web version front end source code a js file was found with some insight on column symantics where rd.new , rd.strq, rd.cmrq where not used which concludes that these are just flags used for mobile applications. Which makes has no effect on the data. It also confirms some guesses made previously, so we wil update the column semantic table and also rename some columns.
+After taking a look for the web version front end source code a js file was found with some insight on column semantics where rd.new , rd.strq, rd.cmrq where not used which concludes that these are just flags used for mobile applications. Which makes has no effect on the data. It also confirms some guesses made previously, so we will update the column semantic table and also rename some columns.
 ```javascript
 $(xml).find("rp").each(function () {
 
@@ -198,7 +198,7 @@ let's take a look if we still have NAs in road status where we have the latest r
 data %>% filter(is.na(road_status) & road_date==report_date) %>%select(-road_date,-report_date,-road_status,-road_hours,-report_hours,-road_minutes,-report_minutes) %>% kable
 ```
 
-The first record is a little bit weird since there's no known reasons for it to not have road_status other than it has something to do with bey2ollak's calculations. let's investiage more into this column.
+The first record is a little bit weird since there's no known reasons for it to not have road_status other than it has something to do with bey2ollak's calculations. let's investigate more into this column.
 ```{r}
 temp1 <- data %>% filter(is.na(road_status) & report_date == road_date)
 data%>% filter(crawl_date==temp1$crawl_date[1] & rd.ri == temp1$rd.ri[1]) %>%select(-report_comment_id,-rd.rp.rpImg,-rd.rp.img,-report_date,-road_date,-report_minutes,-report_hours,-road_minutes,-road_hours) %>% kable()
@@ -209,7 +209,28 @@ It seems that it's the only record recorded in this snapshot about this road. Wh
 For the other rows it seems that the road_hours is more than two hours, however, the status is more than 5 which assumed to not cause any NAs in the road_status. Let's give it a look, we will try to simulate the same scenario or even a more extreme one and take a look of what the data has to say about this scenario.
 
 ```{r}
-data %>% filter(road_status>5 & road_hours>13) %>%select(-report_comment_id,-rd.rp.rpImg,-rd.rp.img,-report_date,-road_date,-report_minutes,-report_hours) %>% select(rd.nm)%>%nrow
+data %>% filter(road_status>5&road_status<11 & road_hours>13 & report_date == road_date) %>%select(-report_comment_id,-rd.rp.rpImg,-rd.rp.img,-report_date,-road_date,-report_minutes,-report_hours)%>%head(20)%>% kable()
 ```
 
+For some reason there are road scenarios where the road_hours is more than two, the road_status is more than 5 and didn't cause NAs, this has something to do with the way bey2ollak calculates the road_status. So in order to avoid making wrong assumptions and messing the data, NAs in road_status will be dropped since they only form `r sum(is.na(data$road_status))*100/nrow(data) `%.
+```{r}
+data <- data%>%filter(!is.na(road_status))
+```
+Bey2ollak enables users to comment on roads without adding a report_status which resulted in having NAs in the report_status.these comments will take report_status 12.
+```{r}
+data <- data %>%mutate(report_status=replace(report_status,is.na(report_status),12))
+info<-data.frame(variable=names(data),nas=rapply(data,function(x)sum(is.na(x))),unique=rapply(data,function(x) length(unique(x))))
+info %>% filter %>% kable
+```
 
+After looking into bey2ollak images, it was found that bey2ollak has three types of images: user profile images, images attached to reports and road images when the latest report has an image attached to it, which are represented respectively in our data rd.rp.img , rd.rp.rpImg and rd.img. let's rename these columns for better reading and discard the values with either true or false since these values are used for retrieving the images from bey2ollak database.
+```{r}
+data <- data %>% rename(reporter_image=rd.rp.img,report_image=rd.rp.rpImg,road_image=rd.img)
+
+data <- data %>% mutate(report_image=replace(report_image,!is.na(report_image),TRUE)) %>% mutate(report_image=replace(report_image,is.na(report_image),FALSE)) %>% mutate(reporter_image=replace(reporter_image,!is.na(reporter_image),TRUE))%>%mutate(reporter_image=replace(reporter_image,is.na(reporter_image),FALSE)) %>% mutate(road_image=replace(road_image,is.na(road_image),FALSE))
+
+info<-data.frame(variable=names(data),nas=rapply(data,function(x)sum(is.na(x))),unique=rapply(data,function(x) length(unique(x))))
+info %>% filter %>% kable
+```
+
+After this step all the NAs from the data were removed and we are ready to continue analysis.

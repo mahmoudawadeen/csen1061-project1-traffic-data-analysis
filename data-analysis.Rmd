@@ -235,22 +235,76 @@ info %>% filter %>% kable
 
 After this step all the NAs from the data were removed and we are ready to continue analysis.
 
-# Visualization
+# Discriptive statics
 Since the data was crawled from a different timezone we need to convert the timezone of all the dates to be consistent with Cairo timings.
-```{r}
+```{r cache=TRUE}
 data<- data%>% mutate(crawl_date=crawl_date+2*60*60,report_date=report_date+2*60*60,road_date=road_date+2*60*60)
 ```
-And then we will divide the report times we have into 30 minutes time intervals and plot them aganist the number of the reports in an interval.
+And then we will divide the report times we have into 30 minutes time intervals and plot them against the number of the reports in an interval.
 ```{r cache=TRUE}
 data <-data %>% mutate(interval = strftime(cut(data$report_date,breaks="30 min"),format="%H:%M"))
 data %>% group_by(interval) %>% summarize(reports=length(report_comment_id))%>%head %>% kable
+```
+Now we can take a look for the number of reports at each time interval it's expected to have two peeks demonstrating the two rush hours in the normal day life going to and coming back from work.
+```{r cache = TRUE}
 data %>% group_by(interval) %>% summarize(reports=length(report_comment_id))%>%ggplot(aes(x=interval, y=reports)) + geom_bar(stat='identity')+theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
-Another
+As expected we have two peaks around 8-9 am and another wider peak around 4-7 pm.
 
-```{r}
-data %>% filter(road_status<6) %>% group_by(rd.nm) %>% summarize(stat=mean(road_status),reports=length(report_comment_id)) %>%arrange(desc(reports))%>% head(10) %>% kable()
-data %>% filter(road_status<6) %>% group_by(rd.nm) %>% summarize(stat=mean(road_status),reports=length(report_comment_id)) %>%arrange(desc(reports))%>% head(10) %>% ggplot(aes(x=rd.nm, y=stat)) + geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjust = 1),text=element_text(size=10))
+Now let's take a look on the 30 most reported roads taking into consideration the road_status from 1 to 5. 
+
+
+```{r cache = TRUE}
+data %>% filter(road_status<6) %>% group_by(rd.nm) %>% summarize(stat=mean(road_status),reports=length(report_comment_id)) %>%arrange(desc(reports))%>% head(30) %>% kable()
 ```
+
+```{r cache = TRUE}
+data %>% filter(road_status<6) %>% group_by(rd.nm) %>% summarize(stat=mean(road_status),reports=length(report_comment_id)) %>%arrange(desc(reports)) %>% head(30) %>% ggplot(aes(x=rd.nm, y=stat)) + geom_bar(stat='identity')+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+It seems that some roads have a mean of approximately 3 while other have approximately 2 which is quite strange since we all now that roads in Cairo are congested, keeping in mind that this plot is across the whole day.
+
+We will give a rough estimate of day to be starting from 6 am to 8 pm.
+```{r cache = TRUE}
+data <- data %>% mutate(day_time = ifelse(strptime(interval,format="%H:%M") < strptime("20:00",format="%H:%M") & strptime(interval,format="%H:%M")>strptime("6:00",format="%H:%M"),"Day","Night"))
+```
+And now we can compare the means between night and day time.
+```{r cache = TRUE}
+data %>% filter(road_status<6) %>% group_by(day_time) %>% summarize(reports=length(report_comment_id)) %>% kable
+```
+
+it's seems people are more active at day time which is consistent with the peaks we found. What about the average road status.
+
+```{r cache = TRUE}
+data %>% filter(road_status<6 &day_time=="Day") %>% group_by(rd.nm) %>% summarize(reports_day=length(report_comment_id),stat_day=mean(road_status)) %>% arrange(desc(reports_day)) %>% head(10) %>% kable
+
+data %>% filter(road_status<6 &day_time=="Night") %>% group_by(rd.nm) %>% summarize(reports_night=length(report_comment_id),stat_night=mean(road_status)) %>% arrange(desc(reports_night)) %>% head(10) %>% kable()
+```
+
+Now let's plot at day
+```{r cache = TRUE}
+data %>% filter(road_status<6 &day_time=="Day") %>% group_by(rd.nm) %>% summarize(reports_day=length(report_comment_id),stat_day=mean(road_status)) %>% arrange(desc(reports_day)) %>% head(10) %>% ggplot(aes(x=rd.nm, y=stat_day)) + geom_bar(stat='identity')+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+Now the night
+```{r cache = TRUE}
+data %>% filter(road_status<6 &day_time=="Night") %>% group_by(rd.nm) %>% summarize(reports_night=length(report_comment_id),stat_night=mean(road_status)) %>% arrange(desc(reports_night)) %>% head(10) %>%ggplot(aes(x=rd.nm, y=stat_night)) + geom_bar(stat='identity')+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+Now let's take a look at days of the week
+```{r cache = TRUE}
+data <- data %>% mutate(weekday=weekdays(report_date))
+
+data %>% group_by(weekday) %>% summarize(reports = length(report_comment_id))%>%mutate(percentage = reports*100/sum(reports)) %>% ggplot(aes(x = "",y=percentage, fill = factor(weekday))) + geom_bar(width = 1,stat="identity") +geom_text(aes(y=cumsum(percentage)-percentage/2,label=round(percentage,3)))+ coord_polar(theta = "y")
+```
+
+Until now we didn't talk about who reports so let's add two more features anonymous and gps.
+```{r}
+data <- data %>% mutate(anonymous=reporter=="fa3el kheir",gps = reporter == "bey2ollakgps")
+data %>% mutate(reporter_type=ifelse(anonymous,"fa3el kheir",ifelse(gps,"bey2ollakgps","user")))%>% group_by(reporter_type) %>% summarize(reports = length(report_comment_id))%>%mutate(percentage = reports*100/sum(reports)) %>% ggplot(aes(x = "",y=percentage, fill = factor(reporter_type))) + geom_bar(width = 1,stat="identity") +geom_text(aes(y=cumsum(percentage)-percentage/2,label=round(percentage,3)))+ coord_polar(theta = "y")
+```
+
+
+
 
